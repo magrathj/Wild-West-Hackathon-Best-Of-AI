@@ -1,0 +1,52 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger:
+- master
+
+variables:
+  databricks.notebook.path: /BestofAI/
+  databricks.cluster.name: hackathon-BestofAI
+  databricks.cluster.id: 
+  databricks.cluster.spark_version: 7.1.x-scala2.12
+  databricks.cluster.node_type_id: Standard_DS3_v2
+  databricks.cluster.driver_node_type_id: Standard_DS3_v2
+  databricks.cluster.autotermination_minutes: 30
+  databricks.cluster.workers.min: 2
+  databricks.cluster.workers.max: 4
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+steps:
+- task: UsePythonVersion@0
+  displayName: 'Set python 3.7'
+  inputs:
+    versionSpec: '3.7'
+    addToPath: true
+    architecture: 'x64'
+- task: Bash@3
+  displayName: 'Install Databricks-Cli'
+  inputs:
+    targetType: 'inline'
+    script: |
+      # install databricks-cli
+      pip install -U databricks-cli
+    
+- task: Bash@3
+  displayName: 'Configure Databricks CLI'
+  inputs:
+    targetType: 'inline'
+    script: |
+      # We need to write the pipe the conf into databricks configure --token since
+      # that command only takes inputs from stdin. 
+      conf=`cat << EOM
+      $(databricks.host)
+      $(databricks.token)
+      EOM`
+      
+      # For password auth there are three lines expected
+      # hostname, username, password
+      echo "$conf" | databricks configure --token
