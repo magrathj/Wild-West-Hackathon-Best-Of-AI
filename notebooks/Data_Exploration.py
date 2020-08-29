@@ -32,7 +32,7 @@ from pyspark.sql.functions import *
 
 # Note: CurrentDatetime is null, use date instead #
 df = spark.table("historical_data")
-df = df.withColumn('PriceDifference', col('ListPrice') - col('ChargedPrice'))
+df = df.withColumn('Id', monotonically_increasing_id()).withColumn('PriceDifference', col('ListPrice') - col('ChargedPrice'))
 
 # COMMAND ----------
 
@@ -198,16 +198,37 @@ class RulesBasedModel(PythonModel):
         self.ItemCountThreshold = ItemCountThreshold
 
     def predict(self, context, data):
-        data['prediction'] = data['PriceDifference'].apply(lambda x: 'True' if x > self.PriceDifferenceThreshold else 'False') 
-        return data
+        return pd.DataFrame(data['PriceDifference'].apply(lambda x: 'True' if x > 10 else 'False'))
 
 # COMMAND ----------
 
 # DBTITLE 1,Save pyfunc model
-# Construct and save the model
-model_path = "RulesBasedModel_v8"
-pyfunc_model = RulesBasedModel(PriceDifferenceThreshold=200, ItemCountThreshold=2)
-mlflow.pyfunc.save_model(path=model_path, python_model=pyfunc_model)
+import mlflow.pyfunc
+
+with mlflow.start_run(run_name="RulesBasedModel") as run:
+  
+  pyfunc_model = RulesBasedModel(PriceDifferenceThreshold=200, ItemCountThreshold=2)
+  
+  mlflow.pyfunc.log_model(python_model=pyfunc_model, artifact_path=None)
+
+  run_id = mlflow.active_run().info.run_id
+
+# COMMAND ----------
+
+# DBTITLE 1,Register Model
+result=mlflow.register_model(run.info.artifact_uri, "RulesBasedModel")
+
+# COMMAND ----------
+
+print(f"Model version: {result.version}, Model name:{result.name}")
+
+# COMMAND ----------
+
+# DBTITLE 1,Transition model to Production
+from mlflow.tracking.client import MlflowClient
+client = MlflowClient()
+
+client.transition_model_version_stage(result.name, result.version, 'Production')
 
 # COMMAND ----------
 
@@ -216,13 +237,24 @@ mlflow.pyfunc.save_model(path=model_path, python_model=pyfunc_model)
 
 # COMMAND ----------
 
-# DBTITLE 1,Apply Rules Based Algorithm 
-# Load the model in `python_function` format
-loaded_model = mlflow.pyfunc.load_model(model_path)
+model_version_uri = "models:/{model_name}/{stage}".format(model_name=result.name, stage='Production') 
 
+# COMMAND ----------
+
+# DBTITLE 1,Load models
+# Load the model in `python_function` format
+loaded_model = mlflow.pyfunc.load_model(model_version_uri)
+
+# COMMAND ----------
+
+# DBTITLE 1,Apply Rules Based Algorithm 
 model_input = df.toPandas()
 model_output = loaded_model.predict(model_input)
 print(model_output)
+
+# COMMAND ----------
+
+
 
 # COMMAND ----------
 
