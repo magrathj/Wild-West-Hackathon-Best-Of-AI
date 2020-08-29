@@ -3,6 +3,11 @@
 
 # COMMAND ----------
 
+dbutils.library.installPyPI("mlflow")
+dbutils.library.restartPython()
+
+# COMMAND ----------
+
 # Note: CurrentDatetime is null, use date instead #
 df = spark.table("historical_data")
 

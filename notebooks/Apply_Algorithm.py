@@ -4,6 +4,11 @@
 
 # COMMAND ----------
 
+dbutils.library.installPyPI("mlflow")
+dbutils.library.restartPython()
+
+# COMMAND ----------
+
 # DBTITLE 1,Replace with stream
 # Note: CurrentDatetime is null, use date instead #
 df = spark.table("historical_data")
