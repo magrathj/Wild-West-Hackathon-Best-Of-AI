@@ -1,0 +1,1 @@
+MSYS_NO_PATHCONV=1 databricks workspace import_dir -o notebooks/ /BestofAI/ --profile hackathon-v2
