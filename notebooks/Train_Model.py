@@ -455,3 +455,18 @@ result = mlflow.register_model(
     model_uri,
     "CrossValidatorModel"
 )
+
+# COMMAND ----------
+
+# DBTITLE 1,Assert registered model works
+pipeline_model = mlflow.spark.load_model(model_uri)
+output_df = pipeline_model.transform(df)
+assert output_df.count() > 0
+
+# COMMAND ----------
+
+# DBTITLE 1,Deploy model to staging
+from mlflow.tracking.client import MlflowClient
+client = MlflowClient()
+
+client.transition_model_version_stage(result.name, result.version, 'Staging')
