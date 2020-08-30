@@ -465,7 +465,7 @@ from mlflow.entities.model_registry.model_version_status import ModelVersionStat
 # Wait until the model is ready
 def wait_until_ready(model_name, model_version):
   client = MlflowClient()
-  for _ in range(10):
+  for _ in range(100):
     model_version_details = client.get_model_version(
       name=model_name,
       version=model_version,
