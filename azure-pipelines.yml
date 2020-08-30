@@ -16,8 +16,8 @@ variables:
   databricks.cluster.autotermination_minutes: 30
   databricks.cluster.workers.min: 2
   databricks.cluster.workers.max: 4
-  databricks.job.createtables.name: '(BestofAI) - Train Machine Learning Model'
-  databricks.job.createtables.id: 
+  databricks.job.train.name: '(BestofAI) - Train Machine Learning Model'
+  databricks.job.train.id: 
 
 pool:
   vmImage: 'ubuntu-latest'
