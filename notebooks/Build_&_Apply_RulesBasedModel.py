@@ -11,6 +11,7 @@ dbutils.library.restartPython()
 
 from pyspark.sql.functions import *
 from pyspark.sql.types import *
+import mlflow
 
 # COMMAND ----------
 
@@ -65,6 +66,10 @@ conda_env = {
 
 # COMMAND ----------
 
+mlflow.set_experiment("/Users/wildwesthacker42@bpcs.com/RulesBasedModel")
+
+# COMMAND ----------
+
 # DBTITLE 1,Start an experiment and log the model
 import mlflow.pyfunc
 
@@ -78,13 +83,6 @@ with mlflow.start_run(run_name="RulesBasedModel") as run:
   run_id = mlflow.active_run().info.run_id
 
   model_uri = "runs:/{run_id}/{artifact_path}".format(run_id=run_id, artifact_path=artifact_path)
-
-# COMMAND ----------
-
-# model = mlflow.pyfunc.load_model(
-#         model_uri=model_uri
-#     ) 
-# model.predict(df.toPandas())
 
 # COMMAND ----------
 

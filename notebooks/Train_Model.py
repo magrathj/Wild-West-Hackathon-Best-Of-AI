@@ -13,6 +13,7 @@ from pyspark.ml import Pipeline
 from pyspark.ml.feature import StringIndexer
 from pyspark.ml.feature import VectorAssembler
 from pyspark.ml.classification import DecisionTreeClassifier
+import mlflow
 
 # COMMAND ----------
 
@@ -363,6 +364,10 @@ from pyspark.sql.functions import lit, expr, col, column
 # Confusion matrix template
 cmt = spark.createDataFrame([(1, 0), (0, 0), (1, 1), (0, 1)], ["label", "prediction"])
 cmt.createOrReplaceTempView("cmt")
+
+# COMMAND ----------
+
+mlflow.set_experiment("/Users/wildwesthacker42@bpcs.com/FraudMLModel")
 
 # COMMAND ----------
 
