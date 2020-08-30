@@ -148,7 +148,7 @@ stages:
   displayName: 'Build Rules Based Model'
   jobs:
   - job: BuildRulesBased
-    displayName: 'Train, Evaluate & Register Model'
+    displayName: 'Build Rules Based Model'
     pool:
       vmImage: 'ubuntu-latest'
 
