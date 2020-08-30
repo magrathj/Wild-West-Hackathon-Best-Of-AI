@@ -7,7 +7,7 @@ trigger:
 - master
 
 variables:
-  databricks.notebook.path: /BestofAI/
+  databricks.notebook.path: /Users/wildwesthacker42@bpcs.com/notebooks
   databricks.cluster.name: hackathon-BestofAI
   databricks.cluster.id: 
   databricks.cluster.spark_version: 7.1.x-scala2.12
@@ -54,7 +54,21 @@ steps:
       # For password auth there are three lines expected
       # hostname, username, password
       echo "$conf" | databricks configure --token
-    
+
+- task: Bash@3
+  displayName: 'Create workspace folder'
+  inputs:
+    targetType: 'inline'
+    script: databricks workspace mkdirs "$(databricks.notebook.path)"
+
+- task: Bash@3
+  displayName: 'Import notebooks'
+  inputs:
+    targetType: 'inline'
+    script: |
+      # import notebooks
+      databricks workspace import_dir -o notebooks "$(databricks.notebook.path)"
+
 - task: Bash@3
   displayName: 'Create / Get Cluster'
   inputs:
