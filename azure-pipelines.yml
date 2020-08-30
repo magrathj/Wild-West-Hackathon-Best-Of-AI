@@ -132,7 +132,22 @@ steps:
       if [ -z "$job_id" ]
       then
       echo "Creating $(databricks.job.train.name) job..."
-      JSON=`cat << jobs/train_ml_model.json`
+
+      JSON=`cat << EOM
+      {
+        "existing_cluster_id": "$(databricks.cluster.id)",
+        "name": "$(databricks.job.train.name)",
+        "email_notifications": {},
+        "timeout_seconds": 0,
+        "notebook_task": {
+          "notebook_path": "$(databricks.notebook.path)/Train_Model",
+          "revision_timestamp": 0,
+          "base_parameters": {
+          }
+        },
+        "max_concurrent_runs": 1
+      }
+      EOM`
       
       job_id=$(databricks jobs create --json "$JSON" | jq ".job_id")
       fi
