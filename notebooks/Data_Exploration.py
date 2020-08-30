@@ -152,22 +152,6 @@ display(df
 
 # COMMAND ----------
 
-
-
-# COMMAND ----------
-
-
-
-# COMMAND ----------
-
-
-
-# COMMAND ----------
-
-
-
-# COMMAND ----------
-
 # MAGIC %md ## Planning
 # MAGIC Plan how your algorithm will find the fraud trends in real-time.
 
@@ -251,10 +235,6 @@ loaded_model = mlflow.pyfunc.load_model(model_version_uri)
 model_input = df.toPandas()
 model_output = loaded_model.predict(model_input)
 print(model_output)
-
-# COMMAND ----------
-
-
 
 # COMMAND ----------
 

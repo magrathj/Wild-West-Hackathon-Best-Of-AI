@@ -12,7 +12,6 @@ dbutils.library.restartPython()
 from pyspark.sql.functions import *
 from pyspark.sql.types import *
 
-
 # COMMAND ----------
 
 # DBTITLE 1,Replace with stream
@@ -31,7 +30,15 @@ model_version_uri = "models:/{model_name}/{stage}".format(model_name=model_name,
 
 # COMMAND ----------
 
-outSchema = df.schema
+sc.setCheckpointDir('/tmp/checkpoint')
+
+# COMMAND ----------
+
+output_df = df.checkpoint()
+
+# COMMAND ----------
+
+outSchema = output_df.schema
 
 # COMMAND ----------
 
@@ -39,15 +46,9 @@ outSchema = outSchema.add('prediction', StringType())
 
 # COMMAND ----------
 
-len(outSchema)
-
-# COMMAND ----------
-
-outSchema
-
-# COMMAND ----------
-
 # DBTITLE 1,Create Pandas UDF to call model
+import pandas as pd
+
 def predict(iterator):
     # pdf is a pandas.DataFrame
     model = mlflow.pyfunc.load_model(
@@ -58,18 +59,21 @@ def predict(iterator):
 
 # COMMAND ----------
 
-df.mapInPandas(predict, "test string").show(1)
-
-# COMMAND ----------
-
-mlflow.pyfunc.load_pyfunc(model_version_uri)
-
-# COMMAND ----------
-
 # DBTITLE 1,Apply prediction
-display(df.withColumn('prediction', test('PriceDifference')))
+predicted_df = df.mapInPandas(predict, outSchema)
 
 # COMMAND ----------
 
 # DBTITLE 1,Filter out those which are considered fraudualent and write them to a table
-predicted_df.filter('prediction==1').write.format("delta")
+predicted_df.filter('prediction=="True"').write.saveAsTable('PossibleFraud')
+
+# COMMAND ----------
+
+predicted_df.write.saveAsTable('DataWithFraudPredictions')
+
+# COMMAND ----------
+
+display(spark.read.table('PossibleFraud'))
+
+# COMMAND ----------
+
