@@ -143,70 +143,6 @@ stages:
           else
             exit 1
           fi
-    - task: Bash@3
-      displayName: 'Create / Get Rules Based Model'
-      inputs:
-        targetType: 'inline'
-        script: |
-          job_id=$(databricks jobs list | grep "$(databricks.job.rulesbased.name)" | awk '{print $1}')
-          
-          if [ -z "$job_id" ]
-          then
-          echo "Creating $(databricks.job.rulesbased.name) job..."
-
-          JSON=`cat << EOM
-          {
-            "existing_cluster_id": "$(databricks.cluster.id)",
-            "name": "$(databricks.job.rulesbased.name)",
-            "email_notifications": {},
-            "timeout_seconds": 0,
-            "notebook_task": {
-              "notebook_path": "$(databricks.notebook.path)/Build_&_Apply_RulesBasedModel",
-              "revision_timestamp": 0,
-              "base_parameters": {
-              }
-            },
-            "max_concurrent_runs": 1
-          }
-          EOM`
-          
-          job_id=$(databricks jobs create --json "$JSON" | jq ".job_id")
-          fi
-          
-          echo "##vso[task.setvariable variable=databricks.job.rulesbased.id;]$job_id"
-    
-    - task: Bash@3
-      displayName: 'Create / Get Training Job'
-      inputs:
-        targetType: 'inline'
-        script: |
-          job_id=$(databricks jobs list | grep "$(databricks.job.train.name)" | awk '{print $1}')
-          
-          if [ -z "$job_id" ]
-          then
-          echo "Creating $(databricks.job.train.name) job..."
-
-          JSON=`cat << EOM
-          {
-            "existing_cluster_id": "$(databricks.cluster.id)",
-            "name": "$(databricks.job.train.name)",
-            "email_notifications": {},
-            "timeout_seconds": 0,
-            "notebook_task": {
-              "notebook_path": "$(databricks.notebook.path)/Train_Model",
-              "revision_timestamp": 0,
-              "base_parameters": {
-              }
-            },
-            "max_concurrent_runs": 1
-          }
-          EOM`
-          
-          job_id=$(databricks jobs create --json "$JSON" | jq ".job_id")
-          fi
-          
-          echo "##vso[task.setvariable variable=databricks.job.train.id;]$job_id"
-
 
 - stage: BuildRulesBased
   displayName: 'Build Rules Based Model'
@@ -246,6 +182,38 @@ stages:
           # For password auth there are three lines expected
           # hostname, username, password
           echo "$conf" | databricks configure --token
+
+    - task: Bash@3
+      displayName: 'Create / Get Rules Based Model'
+      inputs:
+        targetType: 'inline'
+        script: |
+          job_id=$(databricks jobs list | grep "$(databricks.job.rulesbased.name)" | awk '{print $1}')
+          
+          if [ -z "$job_id" ]
+          then
+          echo "Creating $(databricks.job.rulesbased.name) job..."
+
+          JSON=`cat << EOM
+          {
+            "existing_cluster_id": "$(databricks.cluster.id)",
+            "name": "$(databricks.job.rulesbased.name)",
+            "email_notifications": {},
+            "timeout_seconds": 0,
+            "notebook_task": {
+              "notebook_path": "$(databricks.notebook.path)/Build_&_Apply_RulesBasedModel",
+              "revision_timestamp": 0,
+              "base_parameters": {
+              }
+            },
+            "max_concurrent_runs": 1
+          }
+          EOM`
+          
+          job_id=$(databricks jobs create --json "$JSON" | jq ".job_id")
+          fi
+          
+          echo "##vso[task.setvariable variable=databricks.job.rulesbased.id;]$job_id"
 
     - task: Bash@3
       displayName: 'Run Rules Based Model'
@@ -313,6 +281,38 @@ stages:
           # For password auth there are three lines expected
           # hostname, username, password
           echo "$conf" | databricks configure --token
+
+    - task: Bash@3
+      displayName: 'Create / Get Training Job'
+      inputs:
+        targetType: 'inline'
+        script: |
+          job_id=$(databricks jobs list | grep "$(databricks.job.train.name)" | awk '{print $1}')
+          
+          if [ -z "$job_id" ]
+          then
+          echo "Creating $(databricks.job.train.name) job..."
+
+          JSON=`cat << EOM
+          {
+            "existing_cluster_id": "$(databricks.cluster.id)",
+            "name": "$(databricks.job.train.name)",
+            "email_notifications": {},
+            "timeout_seconds": 0,
+            "notebook_task": {
+              "notebook_path": "$(databricks.notebook.path)/Train_Model",
+              "revision_timestamp": 0,
+              "base_parameters": {
+              }
+            },
+            "max_concurrent_runs": 1
+          }
+          EOM`
+          
+          job_id=$(databricks jobs create --json "$JSON" | jq ".job_id")
+          fi
+          
+          echo "##vso[task.setvariable variable=databricks.job.train.id;]$job_id"
 
     - task: Bash@3
       displayName: 'Run Training Job'
