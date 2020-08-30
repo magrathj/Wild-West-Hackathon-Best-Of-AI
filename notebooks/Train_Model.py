@@ -17,7 +17,7 @@ from pyspark.ml.classification import DecisionTreeClassifier
 # COMMAND ----------
 
 # Note: CurrentDatetime is null, use date instead #
-df = spark.table("DataWithFraudPredictions").withColumn('label', when(col('prediction')=='True', lit(1)).otherwise(lit(0))).drop('prediction')
+df = spark.table("RulesBasedModel").withColumn('label', when(col('prediction')=='True', lit(1)).otherwise(lit(0))).drop('prediction')
 
 # COMMAND ----------
 
@@ -450,6 +450,3 @@ result = mlflow.register_model(
     model_uri,
     "CrossValidatorModel"
 )
-
-# COMMAND ----------
-
