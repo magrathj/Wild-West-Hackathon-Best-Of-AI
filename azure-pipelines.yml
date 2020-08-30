@@ -208,10 +208,10 @@ stages:
           echo "##vso[task.setvariable variable=databricks.job.train.id;]$job_id"
 
 
-- stage: Train
-  displayName: 'Build Rules Based Model, Train ML Model, Evaluate & Register Model'
+- stage: BuildRulesBased
+  displayName: 'Build Rules Based Model'
   jobs:
-  - job: Train
+  - job: BuildRulesBased
     displayName: 'Train, Evaluate & Register Model'
     pool:
       vmImage: 'ubuntu-latest'
@@ -248,86 +248,95 @@ stages:
           echo "$conf" | databricks configure --token
 
     - task: Bash@3
-      displayName: 'Create workspace folder'
-      inputs:
-        targetType: 'inline'
-        script: databricks workspace mkdirs "$(databricks.notebook.path)"
-
-    - task: Bash@3
-      displayName: 'Import notebooks'
+      displayName: 'Run Rules Based Model'
       inputs:
         targetType: 'inline'
         script: |
-          # import notebooks
-          databricks workspace import_dir -o notebooks "$(databricks.notebook.path)"
-
-    - task: Bash@3
-      displayName: 'Create / Get Cluster'
-      inputs:
-        targetType: 'inline'
-        script: |
-          cluster_id=$(databricks clusters list | grep "$(databricks.cluster.name)" | awk '{print $1}')
-          
-          if [ -z "$cluster_id" ]
-          then
-          JSON=`cat << EOM
-          {
-            "cluster_name": "$(databricks.cluster.name)",
-            "spark_version": "$(databricks.cluster.spark_version)",
-            "spark_conf": {
-              "spark.databricks.delta.preview.enabled": "true"
-            },
-            "node_type_id": "$(databricks.cluster.node_type_id)",
-            "driver_node_type_id": "$(databricks.cluster.driver_node_type_id)",
-            "spark_env_vars": {
-              "PYSPARK_PYTHON": "/databricks/python3/bin/python3"
-            },
-            "autotermination_minutes": $(databricks.cluster.autotermination_minutes),
-            "enable_elastic_disk": true,
-            "autoscale": {
-              "min_workers": $(databricks.cluster.workers.min),
-              "max_workers": $(databricks.cluster.workers.max)
-            },
-            "init_scripts_safe_mode": false
-          }
-          EOM`
-          
-          cluster_id=$(databricks clusters create --json "$JSON" | jq -r ".cluster_id")
-          sleep 10
-          fi
-          
-          echo "##vso[task.setvariable variable=databricks.cluster.id;]$cluster_id"
-
-    - task: Bash@3
-      displayName: 'Start Cluster'
-      inputs:
-        targetType: 'inline'
-        script: |
-          echo "Checking Cluster State (Cluster ID: $(databricks.cluster.id))..."
-          cluster_state=$(databricks clusters get --cluster-id "$(databricks.cluster.id)" | jq -r ".state")
-          echo "Cluster State: $cluster_state"
-          
-          if [ $cluster_state == "TERMINATED" ]
-          then
-            echo "Starting Databricks Cluster..."
-            databricks clusters start --cluster-id "$(databricks.cluster.id)"
-            sleep 30
-            cluster_state=$(databricks clusters get --cluster-id "$(databricks.cluster.id)" | jq -r ".state")
-            echo "Cluster State: $cluster_state"
-          fi
-          
-          while [ $cluster_state == "PENDING" ]
+          echo "Running job with ID $(databricks.job.rulesbased.id) "
+          run_id1=$(databricks jobs run-now --job-id $(databricks.job.rulesbased.id) | jq ".run_id")
+          echo "  Run ID: $run_id1"
+          run_state=$(databricks runs get --run-id $run_id1 | jq -r ".state.life_cycle_state")
+          echo "Run State (ID $run_id1): $run_state"
+          while [ $run_state == "RUNNING" -o $run_state == "PENDING" ]
           do
             sleep 30
-            cluster_state=$(databricks clusters get --cluster-id "$(databricks.cluster.id)" | jq -r ".state")
-            echo "Cluster State: $cluster_state"
+            run_state=$(databricks runs get --run-id $run_id1 | jq -r ".state.life_cycle_state")
+            echo "Run State (ID $run_id1): $run_state"
           done
+          result_state1=$(databricks runs get --run-id $run_id1 | jq -r ".state.result_state")
+          state_message1=$(databricks runs get --run-id $run_id1 | jq -r ".state.state_message")
+          echo "Result State (ID $run_id1): $result_state1, Message: $state_message1"
           
-          if [ $cluster_state == "RUNNING" ]
+          if [ $result_state1 == "SUCCESS" ]
           then
             exit 0
           else
             exit 1
           fi
+        
 
-    
+- stage: TrainMLModel
+  displayName: 'Train ML Model, Evaluate & Register Model'
+  jobs:
+  - job: TrainML
+    displayName: 'Train, Evaluate & Register Model'
+    pool:
+      vmImage: 'ubuntu-latest'
+
+    steps:
+    - task: UsePythonVersion@0
+      displayName: 'Set python 3.7'
+      inputs:
+        versionSpec: '3.7'
+        addToPath: true
+        architecture: 'x64'
+    - task: Bash@3
+      displayName: 'Install Databricks-Cli'
+      inputs:
+        targetType: 'inline'
+        script: |
+          # install databricks-cli
+          pip install -U databricks-cli
+        
+    - task: Bash@3
+      displayName: 'Configure Databricks CLI'
+      inputs:
+        targetType: 'inline'
+        script: |
+          # We need to write the pipe the conf into databricks configure --token since
+          # that command only takes inputs from stdin. 
+          conf=`cat << EOM
+          $(databricks.host)
+          $(databricks.token)
+          EOM`
+          
+          # For password auth there are three lines expected
+          # hostname, username, password
+          echo "$conf" | databricks configure --token
+
+    - task: Bash@3
+      displayName: 'Run Training Job'
+      inputs:
+        targetType: 'inline'
+        script: |
+          echo "Running job with ID $(databricks.job.train.id) "
+          run_id1=$(databricks jobs run-now --job-id $(databricks.job.train.id) | jq ".run_id")
+          echo "  Run ID: $run_id1"
+          run_state=$(databricks runs get --run-id $run_id1 | jq -r ".state.life_cycle_state")
+          echo "Run State (ID $run_id1): $run_state"
+          while [ $run_state == "RUNNING" -o $run_state == "PENDING" ]
+          do
+            sleep 30
+            run_state=$(databricks runs get --run-id $run_id1 | jq -r ".state.life_cycle_state")
+            echo "Run State (ID $run_id1): $run_state"
+          done
+          result_state1=$(databricks runs get --run-id $run_id1 | jq -r ".state.result_state")
+          state_message1=$(databricks runs get --run-id $run_id1 | jq -r ".state.state_message")
+          echo "Result State (ID $run_id1): $result_state1, Message: $state_message1"
+          
+          if [ $result_state1 == "SUCCESS" ]
+          then
+            exit 0
+          else
+            exit 1
+          fi
