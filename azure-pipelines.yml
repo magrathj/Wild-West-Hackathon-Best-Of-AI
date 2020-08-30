@@ -406,9 +406,7 @@ stages:
               "notebook_path": "$(databricks.notebook.path)/MLflow_transistion_model",
               "revision_timestamp": 0,
               "base_parameters": {
-                "modelName": "CrossValidatorModel",
-                "modelCurrentStage": "Staging",
-                "modelNextStage": "Production"
+                "modelName": "CrossValidatorModel"
               }
             },
             "max_concurrent_runs": 1
@@ -468,9 +466,7 @@ stages:
               "notebook_path": "$(databricks.notebook.path)/MLflow_transistion_model",
               "revision_timestamp": 0,
               "base_parameters": {
-                "modelName": "RulesBasedModel",
-                "modelCurrentStage": "Staging",
-                "modelNextStage": "Production"
+                "modelName": "RulesBasedModel"
               }
             },
             "max_concurrent_runs": 1
