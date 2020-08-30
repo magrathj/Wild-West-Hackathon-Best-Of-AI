@@ -132,7 +132,7 @@ steps:
       if [ -z "$job_id" ]
       then
       echo "Creating $(databricks.job.train.name) job..."
-      JSON=jobs/train_ml_model.json
+      JSON=`cat << jobs/train_ml_model.json`
       
       job_id=$(databricks jobs create --json "$JSON" | jq ".job_id")
       fi
