@@ -1,13 +1,11 @@
 {
-    "existing_cluster_id": "$(databricks.cluster.id)",
-    "name": "$(databricks.job.train.name)",
+    "name": "(BestofAI) - Train Machine Learning Model",
+    "existing_cluster_id": "0806-142342-slate775",
     "email_notifications": {},
     "timeout_seconds": 0,
     "notebook_task": {
-        "notebook_path": "$(databricks.notebook.path)/Train_Model",
-        "revision_timestamp": 0,
-        "base_parameters": {
-        }
+      "notebook_path": "/BestofAI/Train_Model",
+      "revision_timestamp": 0
     },
     "max_concurrent_runs": 1
-}
+} 
