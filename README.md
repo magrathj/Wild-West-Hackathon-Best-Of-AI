@@ -41,3 +41,51 @@ You will be judged by accuracy in finding real-time fraud, as well as your busin
     ./export_notebooks.sh
 ```
 
+## Challenge Findings
+
+### Exporation
+
+Analysing the differences between listing prices, cost price and the actual price it was sold for over a period of time.
+![PriceDifferenceOverTime](./images/Exploration_trends_over_time.PNG)
+
+
+![Reps](./images/Exploration_analysing_reps_customer_counts.PNG)
+
+Analysing the differences between listing prices and the actual price it was sold for.
+![PriceDifference](./images/Exploration_analysing_difference_between_listing_selling_pricing.PNG)
+
+### Planning
+
+* Analyse what potential columns would identicate fraud - as we dont have defined fraud columns we can use rules to estimate what data looks fraudualent
+* Build rules based model to predict fradualent activity
+* Create a table with these estimates
+* Use that new table to build a ML model using wider features
+* Implement that ML model with the stream
+
+
+### Business Explanation
+
+Business goals:
+* Reduce expense base by identifying as much possible fraud as possible
+* Deploy quickly and iterate into production as soon as possible to get a ROI for the data science activities
+
+Identifying as much fraud as possible:
+1. Build rules based model
+2. Build a pipeline, so as to use that rules based model to train a machine learning model
+3. Deploy both the rules based and machine learning model into a production streaming application, so as to identify as many possible counts of fraud as possible
+
+Proving the ROI of data science
+1. Build pipeline to allow iteration
+2. Use azure devops to automate that pipeline 
+3. Iterate and allows changes to propogate through the pipeline. This will allow for actionalble insights to be drawn straight away, even if they are not 100% correct. 
+
+
+#### Using MLflow to deliver models into production setting quickly
+
+![FraudMLModel_MLflow_Runs](./images/FraudMLModel_MLflow_Runs.PNG)
+
+![MLflow_Comparing_Runs](./images/MLflow_Comparing_Runs.PNG)
+
+![Register_Models](./images/Register_Models.PNG)
+
+![Saved_model_artifacts](./images/Saved_model_artifacts.PNG)
