@@ -16,6 +16,8 @@ variables:
   databricks.cluster.autotermination_minutes: 30
   databricks.cluster.workers.min: 2
   databricks.cluster.workers.max: 4
+  databricks.job.createtables.name: '(BestofAI) - Train Machine Learning Model'
+  databricks.job.createtables.id: 
 
 pool:
   vmImage: 'ubuntu-latest'
@@ -87,6 +89,7 @@ steps:
       fi
       
       echo "##vso[task.setvariable variable=databricks.cluster.id;]$cluster_id"
+
 - task: Bash@3
   displayName: 'Start Cluster'
   inputs:
@@ -118,3 +121,20 @@ steps:
       else
         exit 1
       fi
+
+- task: Bash@3
+  displayName: 'Create / Get Training Job'
+  inputs:
+    targetType: 'inline'
+    script: |
+      job_id=$(databricks jobs list | grep "$(databricks.job.train.name)" | awk '{print $1}')
+      
+      if [ -z "$job_id" ]
+      then
+      echo "Creating $(databricks.job.train.name) job..."
+      JSON=jobs/train_ml_model.json
+      
+      job_id=$(databricks jobs create --json "$JSON" | jq ".job_id")
+      fi
+      
+      echo "##vso[task.setvariable variable=databricks.job.train.id;]$job_id"
