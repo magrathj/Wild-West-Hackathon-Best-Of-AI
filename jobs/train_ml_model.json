@@ -4,10 +4,10 @@
     "email_notifications": {},
     "timeout_seconds": 0,
     "notebook_task": {
-      "notebook_path": "$(databricks.notebook.path)/Train_Model",
-      "revision_timestamp": 0,
-      "base_parameters": {
-      }
+        "notebook_path": "$(databricks.notebook.path)/Train_Model",
+        "revision_timestamp": 0,
+        "base_parameters": {
+        }
     },
     "max_concurrent_runs": 1
-  }
+}
