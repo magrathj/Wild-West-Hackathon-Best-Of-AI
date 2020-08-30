@@ -65,15 +65,13 @@ predicted_df = df.mapInPandas(predict, outSchema)
 # COMMAND ----------
 
 # DBTITLE 1,Filter out those which are considered fraudualent and write them to a table
-predicted_df.filter('prediction=="True"').write.saveAsTable('PossibleFraud')
+predicted_df.filter('prediction=="True"').write.saveAsTable(model_name+'_PossibleFraud')
 
 # COMMAND ----------
 
-predicted_df.write.saveAsTable('DataWithFraudPredictions')
+# DBTITLE 1,Save dataframe which has had Rules based model applied to it
+predicted_df.write.saveAsTable(model_name)
 
 # COMMAND ----------
 
 display(spark.read.table('PossibleFraud'))
-
-# COMMAND ----------
-
