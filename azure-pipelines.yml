@@ -346,161 +346,161 @@ stages:
           fi
 
 
-- stage: TransitionModel
-  displayName: 'Transition models to production'
-  jobs:
-  - job: TransitionModel
-    displayName: 'Transition models to production'
-    pool:
-      vmImage: 'ubuntu-latest'
+# - stage: TransitionModel
+#   displayName: 'Transition models to production'
+#   jobs:
+#   - job: TransitionModel
+#     displayName: 'Transition models to production'
+#     pool:
+#       vmImage: 'ubuntu-latest'
 
-    steps:
-    - task: UsePythonVersion@0
-      displayName: 'Set python 3.7'
-      inputs:
-        versionSpec: '3.7'
-        addToPath: true
-        architecture: 'x64'
-    - task: Bash@3
-      displayName: 'Install Databricks-Cli'
-      inputs:
-        targetType: 'inline'
-        script: |
-          # install databricks-cli
-          pip install -U databricks-cli
+#     steps:
+#     - task: UsePythonVersion@0
+#       displayName: 'Set python 3.7'
+#       inputs:
+#         versionSpec: '3.7'
+#         addToPath: true
+#         architecture: 'x64'
+#     - task: Bash@3
+#       displayName: 'Install Databricks-Cli'
+#       inputs:
+#         targetType: 'inline'
+#         script: |
+#           # install databricks-cli
+#           pip install -U databricks-cli
         
-    - task: Bash@3
-      displayName: 'Configure Databricks CLI'
-      inputs:
-        targetType: 'inline'
-        script: |
-          # We need to write the pipe the conf into databricks configure --token since
-          # that command only takes inputs from stdin. 
-          conf=`cat << EOM
-          $(databricks.host)
-          $(databricks.token)
-          EOM`
+#     - task: Bash@3
+#       displayName: 'Configure Databricks CLI'
+#       inputs:
+#         targetType: 'inline'
+#         script: |
+#           # We need to write the pipe the conf into databricks configure --token since
+#           # that command only takes inputs from stdin. 
+#           conf=`cat << EOM
+#           $(databricks.host)
+#           $(databricks.token)
+#           EOM`
           
-          # For password auth there are three lines expected
-          # hostname, username, password
-          echo "$conf" | databricks configure --token
+#           # For password auth there are three lines expected
+#           # hostname, username, password
+#           echo "$conf" | databricks configure --token
 
-    - task: Bash@3
-      displayName: 'Create / Get Transition of ML Job'
-      inputs:
-        targetType: 'inline'
-        script: |
-          job_id=$(databricks jobs list | grep "$(databricks.job.transitionmlmodel.name)" | awk '{print $1}')
+#     - task: Bash@3
+#       displayName: 'Create / Get Transition of ML Job'
+#       inputs:
+#         targetType: 'inline'
+#         script: |
+#           job_id=$(databricks jobs list | grep "$(databricks.job.transitionmlmodel.name)" | awk '{print $1}')
           
-          if [ -z "$job_id" ]
-          then
-          echo "Creating $(databricks.job.transitionmlmodel.name) job..."
+#           if [ -z "$job_id" ]
+#           then
+#           echo "Creating $(databricks.job.transitionmlmodel.name) job..."
 
-          JSON=`cat << EOM
-          {
-            "existing_cluster_id": "$(databricks.cluster.id)",
-            "name": "$(databricks.job.transitionmlmodel.name)",
-            "email_notifications": {},
-            "timeout_seconds": 0,
-            "notebook_task": {
-              "notebook_path": "$(databricks.notebook.path)/MLflow_transistion_model",
-              "revision_timestamp": 0,
-              "base_parameters": {
-                "modelName": "CrossValidatorModel"
-              }
-            },
-            "max_concurrent_runs": 1
-          }
-          EOM`
+#           JSON=`cat << EOM
+#           {
+#             "existing_cluster_id": "$(databricks.cluster.id)",
+#             "name": "$(databricks.job.transitionmlmodel.name)",
+#             "email_notifications": {},
+#             "timeout_seconds": 0,
+#             "notebook_task": {
+#               "notebook_path": "$(databricks.notebook.path)/MLflow_transistion_model",
+#               "revision_timestamp": 0,
+#               "base_parameters": {
+#                 "modelName": "CrossValidatorModel"
+#               }
+#             },
+#             "max_concurrent_runs": 1
+#           }
+#           EOM`
           
-          job_id=$(databricks jobs create --json "$JSON" | jq ".job_id")
-          fi
+#           job_id=$(databricks jobs create --json "$JSON" | jq ".job_id")
+#           fi
           
-          echo "##vso[task.setvariable variable=databricks.job.transitionmlmodel.id;]$job_id"
+#           echo "##vso[task.setvariable variable=databricks.job.transitionmlmodel.id;]$job_id"
 
-    - task: Bash@3
-      displayName: 'Run Transition ML model to Production'
-      inputs:
-        targetType: 'inline'
-        script: |
-          echo "Running job with ID $(databricks.job.transitionmlmodel.id) "
-          run_id1=$(databricks jobs run-now --job-id $(databricks.job.transitionmlmodel.id) | jq ".run_id")
-          echo "  Run ID: $run_id1"
-          run_state=$(databricks runs get --run-id $run_id1 | jq -r ".state.life_cycle_state")
-          echo "Run State (ID $run_id1): $run_state"
-          while [ $run_state == "RUNNING" -o $run_state == "PENDING" ]
-          do
-            sleep 30
-            run_state=$(databricks runs get --run-id $run_id1 | jq -r ".state.life_cycle_state")
-            echo "Run State (ID $run_id1): $run_state"
-          done
-          result_state1=$(databricks runs get --run-id $run_id1 | jq -r ".state.result_state")
-          state_message1=$(databricks runs get --run-id $run_id1 | jq -r ".state.state_message")
-          echo "Result State (ID $run_id1): $result_state1, Message: $state_message1"
+#     - task: Bash@3
+#       displayName: 'Run Transition ML model to Production'
+#       inputs:
+#         targetType: 'inline'
+#         script: |
+#           echo "Running job with ID $(databricks.job.transitionmlmodel.id) "
+#           run_id1=$(databricks jobs run-now --job-id $(databricks.job.transitionmlmodel.id) | jq ".run_id")
+#           echo "  Run ID: $run_id1"
+#           run_state=$(databricks runs get --run-id $run_id1 | jq -r ".state.life_cycle_state")
+#           echo "Run State (ID $run_id1): $run_state"
+#           while [ $run_state == "RUNNING" -o $run_state == "PENDING" ]
+#           do
+#             sleep 30
+#             run_state=$(databricks runs get --run-id $run_id1 | jq -r ".state.life_cycle_state")
+#             echo "Run State (ID $run_id1): $run_state"
+#           done
+#           result_state1=$(databricks runs get --run-id $run_id1 | jq -r ".state.result_state")
+#           state_message1=$(databricks runs get --run-id $run_id1 | jq -r ".state.state_message")
+#           echo "Result State (ID $run_id1): $result_state1, Message: $state_message1"
           
-          if [ $result_state1 == "SUCCESS" ]
-          then
-            exit 0
-          else
-            exit 1
-          fi
+#           if [ $result_state1 == "SUCCESS" ]
+#           then
+#             exit 0
+#           else
+#             exit 1
+#           fi
     
-    - task: Bash@3
-      displayName: 'Create / Get Transition of Rules Based Model Job'
-      inputs:
-        targetType: 'inline'
-        script: |
-          job_id=$(databricks jobs list | grep "$(databricks.job.transitionrulesbasedmodel.name)" | awk '{print $1}')
+#     - task: Bash@3
+#       displayName: 'Create / Get Transition of Rules Based Model Job'
+#       inputs:
+#         targetType: 'inline'
+#         script: |
+#           job_id=$(databricks jobs list | grep "$(databricks.job.transitionrulesbasedmodel.name)" | awk '{print $1}')
           
-          if [ -z "$job_id" ]
-          then
-          echo "Creating $(databricks.job.transitionrulesbasedmodel.name) job..."
+#           if [ -z "$job_id" ]
+#           then
+#           echo "Creating $(databricks.job.transitionrulesbasedmodel.name) job..."
 
-          JSON=`cat << EOM
-          {
-            "existing_cluster_id": "$(databricks.cluster.id)",
-            "name": "$(databricks.job.transitionrulesbasedmodel.name)",
-            "email_notifications": {},
-            "timeout_seconds": 0,
-            "notebook_task": {
-              "notebook_path": "$(databricks.notebook.path)/MLflow_transistion_model",
-              "revision_timestamp": 0,
-              "base_parameters": {
-                "modelName": "RulesBasedModel"
-              }
-            },
-            "max_concurrent_runs": 1
-          }
-          EOM`
+#           JSON=`cat << EOM
+#           {
+#             "existing_cluster_id": "$(databricks.cluster.id)",
+#             "name": "$(databricks.job.transitionrulesbasedmodel.name)",
+#             "email_notifications": {},
+#             "timeout_seconds": 0,
+#             "notebook_task": {
+#               "notebook_path": "$(databricks.notebook.path)/MLflow_transistion_model",
+#               "revision_timestamp": 0,
+#               "base_parameters": {
+#                 "modelName": "RulesBasedModel"
+#               }
+#             },
+#             "max_concurrent_runs": 1
+#           }
+#           EOM`
           
-          job_id=$(databricks jobs create --json "$JSON" | jq ".job_id")
-          fi
+#           job_id=$(databricks jobs create --json "$JSON" | jq ".job_id")
+#           fi
           
-          echo "##vso[task.setvariable variable=databricks.job.transitionrulesbasedmodel.id;]$job_id"
+#           echo "##vso[task.setvariable variable=databricks.job.transitionrulesbasedmodel.id;]$job_id"
 
-    - task: Bash@3
-      displayName: 'Run Transition Rules Based model to Production'
-      inputs:
-        targetType: 'inline'
-        script: |
-          echo "Running job with ID $(databricks.job.transitionrulesbasedmodel.id) "
-          run_id1=$(databricks jobs run-now --job-id $(databricks.job.transitionrulesbasedmodel.id) | jq ".run_id")
-          echo "  Run ID: $run_id1"
-          run_state=$(databricks runs get --run-id $run_id1 | jq -r ".state.life_cycle_state")
-          echo "Run State (ID $run_id1): $run_state"
-          while [ $run_state == "RUNNING" -o $run_state == "PENDING" ]
-          do
-            sleep 30
-            run_state=$(databricks runs get --run-id $run_id1 | jq -r ".state.life_cycle_state")
-            echo "Run State (ID $run_id1): $run_state"
-          done
-          result_state1=$(databricks runs get --run-id $run_id1 | jq -r ".state.result_state")
-          state_message1=$(databricks runs get --run-id $run_id1 | jq -r ".state.state_message")
-          echo "Result State (ID $run_id1): $result_state1, Message: $state_message1"
+#     - task: Bash@3
+#       displayName: 'Run Transition Rules Based model to Production'
+#       inputs:
+#         targetType: 'inline'
+#         script: |
+#           echo "Running job with ID $(databricks.job.transitionrulesbasedmodel.id) "
+#           run_id1=$(databricks jobs run-now --job-id $(databricks.job.transitionrulesbasedmodel.id) | jq ".run_id")
+#           echo "  Run ID: $run_id1"
+#           run_state=$(databricks runs get --run-id $run_id1 | jq -r ".state.life_cycle_state")
+#           echo "Run State (ID $run_id1): $run_state"
+#           while [ $run_state == "RUNNING" -o $run_state == "PENDING" ]
+#           do
+#             sleep 30
+#             run_state=$(databricks runs get --run-id $run_id1 | jq -r ".state.life_cycle_state")
+#             echo "Run State (ID $run_id1): $run_state"
+#           done
+#           result_state1=$(databricks runs get --run-id $run_id1 | jq -r ".state.result_state")
+#           state_message1=$(databricks runs get --run-id $run_id1 | jq -r ".state.state_message")
+#           echo "Result State (ID $run_id1): $result_state1, Message: $state_message1"
           
-          if [ $result_state1 == "SUCCESS" ]
-          then
-            exit 0
-          else
-            exit 1
-          fi
+#           if [ $result_state1 == "SUCCESS" ]
+#           then
+#             exit 0
+#           else
+#             exit 1
+#           fi
